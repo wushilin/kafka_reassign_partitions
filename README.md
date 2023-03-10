@@ -117,10 +117,12 @@ Please considering doing the following:
         b. If you use Confluent Platform, you can use `kafka-reassign-partitions`
     3. Run this command:
        $ kafka-reassign-partitions --execute --reassignment-json-file "movement1.json" \
-              --bootstrap-server "simple-kafka-c2.jungle:9091" --command-config "client.properties"
+              --bootstrap-server "simple-kafka-c2.jungle:9091" \
+              --command-config "client.properties"
     4. Run this command until it completes successfully:
        $ kafka-reassign-partitions --verify --reassignment-json-file "movement1.json" \
-              --bootstrap-server "simple-kafka-c2.jungle:9091" --command-config "client.properties"
+              --bootstrap-server "simple-kafka-c2.jungle:9091" \
+              --command-config "client.properties"
     5. Verify your placement manually using kafka-topics describe feature.
 ###############################################################################
 ```
