@@ -1,6 +1,18 @@
 # kafka_reassign_partitions
 Increase your topic replication factor, move partitions around, generate observers, and more!
 
+It supports the following key features:
+
+1. Support increasing replicas by placement constraint
+2. Support reshuffle of replicas so leaders are more balanced
+3. Support adding observers (for Confluent Platform)
+4. Gives clear instruction on how to execute the movement
+5. In rare cases, you may want to reduce replicas - yes it also supports
+6. Support `@NONE` macro in case your cluster has no RACK defined!!!
+
+It only generates the `movement.json` for you. To execute, you will still use well supported
+`kafka-reassign-partitions` tool, no risk involved if you checked before executing!
+
 # Pre-requisite
 - Java 1.8 (JRE or JDK)
 
