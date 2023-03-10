@@ -119,9 +119,11 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
                         cluster.selectReplica(targetRack, targetCount, exclusion) // exclude replicas from selection
                     observers.addAll(selected)
                 }
-                replicas.addAll(observers) //observers are also replicas
+                replicas.shuffle()
+                observers.shuffle()
                 val replicasFinal = filterDup(replicas)
                 val observersFinal = filterDup(observers)
+                replicasFinal.addAll(observers) //observers are also replicas
                 val difference = mutableSetOf<Int>()
                 difference.addAll(replicasFinal)
                 difference.removeAll(observersFinal.toSet())
@@ -130,8 +132,6 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
                 if (difference.size == 0) {
                     throw IllegalArgumentException("$topic:$partitionNumber : Effectively all replicas are observers!")
                 }
-                replicasFinal.shuffle()
-                observersFinal.shuffle()
                 val newItem = OutputEntry(topic, partitionNumber, replicasFinal, observersFinal)
                 result.add(newItem)
             }
