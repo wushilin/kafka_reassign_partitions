@@ -86,13 +86,15 @@ Options:
                                    for kafka-reassign-partitions
   -h, --help                       Show this message and exit
 ```
-5. Execute your movement
+5. Execute your movement using `kafka-reassign-partitions` (or `kafka-reassign-partitions.sh`)
 ```bash
-kafka-reassign-partitions --execute --reassignment-json-file "movement.json" --bootstrap-server "simple-kafka-c2.jungle:9091" --command-config "client.properties"
+kafka-reassign-partitions --execute --reassignment-json-file "movement.json" \
+  --bootstrap-server "simple-kafka-c2.jungle:9091" --command-config "client.properties"
 ```
 
 6. Verify the status until it is fully completed
 ```
-kafka-reassign-partitions --verify --reassignment-json-file "movement.json" --bootstrap-server "simple-kafka-c2.jungle:9091" --command-config "client.properties"
+kafka-reassign-partitions --verify --reassignment-json-file "movement.json" \
+  --bootstrap-server "simple-kafka-c2.jungle:9091" --command-config "client.properties"
 ```
 
