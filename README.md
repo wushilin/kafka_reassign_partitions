@@ -22,14 +22,19 @@ Alternatively you can download a binary in release page. It is the same as if yo
 
 # Running
 
-1. Prepare your `client.properties`. This is a genearal kafka client.properties used for your admin client.
+## Prepare your `client.properties`. 
+
+This is a genearal kafka client.properties used for your admin client.
 The user used in this client.properties should have enough permission to reassign partitions.
 
-2. Prepare your `placement.json`. See the placement.json in `examples` folder.
+## Prepare your `placement.json`. 
+
+See the `placement.json` in `examples` folder.
+
 For more info, refer to `https://docs.confluent.io/platform/current/multi-dc-deployments/multi-region.html`
 If your cluster has no RACK, you can use `@NONE` as rack in `placement.json`, and it will be distributed amongst the brokers has no rack.
 
-3. Prepare your `topics.txt`. 
+## Prepare your `topics.txt`. 
 This is optional. If no `topics.txt` is specified, all topics placement json will be generated.
 You can get topics from your cluster by using a script shipped together in this package.
 
@@ -55,7 +60,7 @@ Options:
   -c, --command-config TEXT        Your kafka connectivity client properties
   -h, --help                       Show this message and exit
 ```
-4. Generate your placement JSON
+## Generate your placement JSON
 ```bash
 ./generate-reassignment.sh -c client.properties -p placement.json -t topics.txt -o movement.json
 ```
@@ -86,11 +91,33 @@ Options:
                                    for kafka-reassign-partitions
   -h, --help                       Show this message and exit
 ```
-5. Execute your movement using `kafka-reassign-partitions` (or `kafka-reassign-partitions.sh`)
+
+The command also gives you the actual command to run. Please consider running after verifing if the movement makes sense!
+
+Example output at the last few lines:
+```
+###############################################################################
+Please considering doing the following:
+    1. Inspect `movement1.json` and make sure it is accurate and makes sense!
+    2. If desired, please apply the changes with kafka-reassign-partitions!
+        a. If you use open source kafka, you can use `kafka-reassign-partitions.sh`
+        b. If you use Confluent Platform, you can use `kafka-reassign-partitions`
+    3. Run this command:
+       $ kafka-reassign-partitions --execute --reassignment-json-file "movement1.json" \
+              --bootstrap-server "simple-kafka-c2.jungle:9091" --command-config "client.properties"
+    4. Run this command until it completes successfully:
+       $ kafka-reassign-partitions --verify --reassignment-json-file "movement1.json" \
+              --bootstrap-server "simple-kafka-c2.jungle:9091" --command-config "client.properties"
+    5. Verify your placement manually using kafka-topics describe feature.
+###############################################################################
+```
+## Execute your movement using `kafka-reassign-partitions` (or `kafka-reassign-partitions.sh`)
 ```bash
 kafka-reassign-partitions --execute --reassignment-json-file "movement.json" \
   --bootstrap-server "simple-kafka-c2.jungle:9091" --command-config "client.properties"
 ```
+
+This will submit the movement request to server. This may take a while to complete.
 
 6. Verify the status until it is fully completed
 ```
@@ -98,3 +125,6 @@ kafka-reassign-partitions --verify --reassignment-json-file "movement.json" \
   --bootstrap-server "simple-kafka-c2.jungle:9091" --command-config "client.properties"
 ```
 
+Upon completion, the internal throttles will be removed automatically
+
+## Enjoy!
