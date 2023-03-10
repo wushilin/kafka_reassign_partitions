@@ -1,6 +1,6 @@
 #!/bin/sh
 
-gradle clean jar
+./gradlew clean jar
 VERSION=`cat build.gradle.kts | grep "^version" | sed 's/.*=[[:space:]]*"//g' | sed 's/".*$//g'`
 echo $VERSION
 PACKAGE_NAME=kafka_reassign_partitions-$VERSION
