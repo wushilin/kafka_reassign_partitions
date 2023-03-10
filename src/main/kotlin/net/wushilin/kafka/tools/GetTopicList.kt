@@ -11,6 +11,7 @@ import org.apache.kafka.clients.admin.AdminClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
+import java.util.*
 
 class GetTopicList : CliktCommand() {
     companion object {
@@ -43,15 +44,17 @@ class GetTopicList : CliktCommand() {
         }
         adminClient = connectToKafka(clientFile)
         logger.info("Kafka connected.");
-        val topicsSet = getTopicList(adminClient)
-        logger.info("Found ${topicsSet.size} topics")
+        val topicsSetNoOrder = getTopicList(adminClient)
+        val topicsSetOrdered = TreeSet<String>()
+        topicsSetOrdered.addAll(topicsSetNoOrder)
+        logger.info("Found ${topicsSetOrdered.size} topics")
         java.io.File(topicsFile).outputStream().use {
-            for (i in topicsSet) {
+            for (i in topicsSetOrdered) {
                 logger.info("Written topic: $i")
                 it.write("$i\n".toByteArray(StandardCharsets.UTF_8))
             }
         }
-        logger.info("Written ${topicsSet.size} entries to $topicsFile")
+        logger.info("Written ${topicsSetOrdered.size} entries to $topicsFile")
     }
 }
 

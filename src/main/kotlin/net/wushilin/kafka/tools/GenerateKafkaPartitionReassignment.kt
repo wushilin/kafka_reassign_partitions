@@ -9,6 +9,7 @@ import net.wushilin.kafka.tools.KafkaUtil.Companion.connectToKafka
 import net.wushilin.kafka.tools.KafkaUtil.Companion.getClusterInfo
 import net.wushilin.kafka.tools.KafkaUtil.Companion.getTopicList
 import net.wushilin.kafka.tools.KafkaUtil.Companion.getTopicPartitions
+import net.wushilin.props.EnvAwareProperties
 import org.apache.kafka.clients.admin.AdminClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -58,6 +59,7 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
                 logger.warn("Going to overwrite $outputFile!")
             }
         }
+        val props = EnvAwareProperties.fromPath(clientFile)
         logger.info("Connecting to kafka")
         adminClient = connectToKafka(clientFile)
         logger.info("Kafka connected")
@@ -137,6 +139,19 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
             Parser.objectMapper.writerWithDefaultPrettyPrinter().writeValue(it, output)
         }
         logger.info("Written ${result.size} entries to $outputFile")
+        val bootstrapServers = props.getProperty("bootstrap.servers")
+        println("###############################################################################")
+        println("Please considering doing the following:")
+        println("    1. Inspect `$outputFile` and make sure it is accurate and makes sense!")
+        println("    2. If desired, please apply the changes with kafka-reassign-partitions!")
+        println("        a. If you use open source kafka, you can use `kafka-reassign-partitions.sh`")
+        println("        b. If you use Confluent Platform, you can use `kafka-reassign-partitions`")
+        println("    3. Run this command:")
+        println("       $ kafka-reassign-partitions --execute --reassignment-json-file \"$outputFile\" --bootstrap-server \"$bootstrapServers\" --command-config \"$clientFile\"")
+        println("    4. Run this command until it completes successfully:")
+        println("       $ kafka-reassign-partitions --verify --reassignment-json-file \"$outputFile\" --bootstrap-server \"$bootstrapServers\" --command-config \"$clientFile\"")
+        println("    5. Verify your placement manually using kafka-topics describe feature.")
+        println("###############################################################################")
     }
 
     private fun filterDup(list: MutableList<Int>): MutableList<Int> {
