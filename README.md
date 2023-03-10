@@ -8,7 +8,7 @@ It supports the following key features:
 3. Support adding observers (for Confluent Platform)
 4. Gives clear instruction on how to execute the movement
 5. In rare cases, you may want to reduce replicas - yes it also supports
-6. Support `@NONE` macro in case your cluster has no RACK defined!!!
+6. Support `@NONE` macro for default RACK placement, in case your cluster has no RACK defined!!!
 
 It only generates the `movement.json` for you. To execute, you will still use well supported
 `kafka-reassign-partitions` tool, no risk involved if you checked before executing!
