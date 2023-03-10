@@ -3,12 +3,13 @@ Increase your topic replication factor, move partitions around, generate observe
 
 It supports the following key features:
 
-1. Support increasing replicas by placement constraint
-2. Support reshuffle of replicas so leaders are more balanced
-3. Support adding observers (for Confluent Platform)
-4. Gives clear instruction on how to execute the movement
-5. In rare cases, you may want to reduce replicas - yes it also supports
-6. Support `@NONE` macro for default RACK placement, in case your cluster has no RACK defined!!!
+- Support increasing replicas by placement constraint, even when you have no placement constraints applied on topic!
+- Support replica placement based on placement constraint, even with Open Source Kafka.
+- Support reshuffle of replicas so leaders are more balanced
+- Support adding observers (for Confluent Platform)
+- Gives clear instruction on how to execute the movement
+- In rare cases, you may want to reduce replicas - yes it also supports
+- Support `@NONE` macro for default RACK placement, in case your cluster has no RACK defined!!!
 
 It only generates the `movement.json` for you. To execute, you will still use well supported
 `kafka-reassign-partitions` tool, no risk involved if you checked before executing!
