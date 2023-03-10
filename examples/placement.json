@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "replicas": [
+    {
+      "count": 1,
+      "constraints": {
+        "rack": "@NONE"
+      }
+    },
+    {
+      "count": 2,
+      "constraints": {
+        "rack": "@NONE"
+      }
+    },
+    {
+      "count": 0,
+      "constraints": {
+        "rack": "@NONE"
+      }
+    }
+  ],
+  "observers": [
+    {
+      "count": 2,
+      "constraints": {
+        "rack": "@NONE"
+      }
+    },
+    {
+      "count": 1,
+      "constraints": {
+        "rack": "@NONE"
+      }
+    },
+    {
+      "count": 0,
+      "constraints": {
+        "rack": "@NONE"
+      }
+    }
+  ],
+  "observerPromotionPolicy":"under-min-isr"
+}
