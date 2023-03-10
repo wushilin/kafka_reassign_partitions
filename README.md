@@ -18,6 +18,8 @@ Packaging:
 ./create_package
 ```
 
+The package will be created at `build/*.tar.gz` location.
+
 Alternatively you can download a binary in release page. It is the same as if you created package yourself.
 
 # Running
