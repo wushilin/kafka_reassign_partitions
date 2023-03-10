@@ -22,25 +22,33 @@ Alternatively you can download a binary in release page. It is the same as if yo
 
 # Running
 
-## Prepare your `client.properties`. 
+## Prepare your `client.properties`
 
-This is a genearal kafka client.properties used for your admin client.
+This is a genearal kafka `client.properties` used for your admin client.
 The user used in this client.properties should have enough permission to reassign partitions.
 
-## Prepare your `placement.json`. 
+If you have SASL (e.g. kerberos), please configure it here.
+
+## Prepare your `placement.json`
 
 See the `placement.json` in `examples` folder.
 
 For more info, refer to `https://docs.confluent.io/platform/current/multi-dc-deployments/multi-region.html`
 If your cluster has no RACK, you can use `@NONE` as rack in `placement.json`, and it will be distributed amongst the brokers has no rack.
 
-## Prepare your `topics.txt`. 
-This is optional. If no `topics.txt` is specified, all topics placement json will be generated.
+## Prepare your `topics.txt`
+This is the list of topics to propose for movement.
+
+This is optional. If no `topics.txt` is specified, all topics' placement json will be generated.
+
 You can get topics from your cluster by using a script shipped together in this package.
 
+The command is:
 ```bash
 ./get-topics.sh -c client.properties -t topics.txt
 ```
+
+This command will dump all topics into `topics.txt`.
 
 You may edit `topics.txt` after it is loaded if you want to exclude some topics from placement movements.
 
@@ -65,9 +73,14 @@ Options:
 ./generate-reassignment.sh -c client.properties -p placement.json -t topics.txt -o movement.json
 ```
 
-A `movement.json` file based on your `placement.json` will be randomly generated. It may involves leader movements, topic data copying during execution.
+This command will generate `movement.json` to reassign your partition. The rules will be as random as possible, but adhere to the `placement.json` rules.
+
+After this, a `movement.json` file based on your `placement.json` will be randomly generated. If you execute it (see later), it may involves 
+partition leadership movements, topic data copying during execution, or increasing or replication factor (or decreasin if you misconfigured it)
 
 You may want to inspect the `movement.json` before executing.
+
+If you decreased `replicas`, you may also want to check if your topics `min.insync.replicas` is set appropriately!
 
 To see all options for `generate-reassignment.sh`, run:
 ```bash
