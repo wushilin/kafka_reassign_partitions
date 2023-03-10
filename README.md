@@ -50,6 +50,8 @@ See the `placement.json` in `examples` folder.
 For more info, refer to `https://docs.confluent.io/platform/current/multi-dc-deployments/multi-region.html`
 If your cluster has no RACK, you can use `@NONE` as rack in `placement.json`, and it will be distributed amongst the brokers has no rack.
 
+NOTE: `@NONE` is not any rack, it is for brokers that has no RACK at all.
+
 ## Prepare your `topics.txt`
 This is the list of topics to propose for movement.
 
