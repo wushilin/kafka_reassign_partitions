@@ -94,6 +94,25 @@ This command will generate `movement.json` to reassign your partition. The rules
 After this, a `movement.json` file based on your `placement.json` will be randomly generated. If you execute it (see later), it may involves 
 partition leadership movements, topic data copying during execution, or increasing or replication factor (or decreasin if you misconfigured it)
 
+Sample `movement.json`:
+```json
+{
+  "partitions" : [ {
+    "topic" : "__consumer_offsets",
+    "partition" : 0,
+    "replicas" : [ 202, 101, 201, 301, 302, 102 ],
+    "observers" : [ 301, 302, 102 ],
+    "log_dirs" : [ "any", "any", "any", "any", "any", "any" ]
+  }, {
+    "topic" : "__consumer_offsets",
+    "partition" : 1,
+    "replicas" : [ 301, 202, 101, 102, 201, 302 ],
+    "observers" : [ 102, 201, 302 ],
+    "log_dirs" : [ "any", "any", "any", "any", "any", "any" ]
+  } ],
+  "version" : 1
+}
+```
 You may want to inspect the `movement.json` before executing.
 
 If you decreased `replicas`, you may also want to check if your topics `min.insync.replicas` is set appropriately!
