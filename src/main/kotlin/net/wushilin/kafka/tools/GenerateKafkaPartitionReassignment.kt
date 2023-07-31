@@ -67,7 +67,7 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
                 it.isNotEmpty()
             }.map {
                 it.toInt()
-            }
+            }.toSet().toList()
             result[rack] = tokensInt
         }
         return result
