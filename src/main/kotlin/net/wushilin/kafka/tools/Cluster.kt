@@ -16,7 +16,7 @@ data class Cluster(val racks:Map<String, List<Int>>) {
         }
 
         val options = mutableListOf<Int>()
-        val optionsOverride = racks[rack]
+        val optionsOverride = rackMapOverride[rack]
         if(optionsOverride == null) {
             val optionsRaw =
                 racks[rack] ?: throw IllegalArgumentException("Required $count replicas in rack $rack but none found!")
