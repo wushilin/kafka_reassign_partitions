@@ -5,7 +5,7 @@ import java.util.*
 
 data class Cluster(val racks:Map<String, List<Int>>) {
     var random:Random = Random();
-    fun selectReplica(rack:String, count:Int, exclusions:List<Int> = mutableListOf<Int>()):List<Int> {
+    fun selectReplica(rackMapOverride:Map<String, List<Int>>, rack:String, count:Int, exclusions:List<Int> = mutableListOf<Int>()):List<Int> {
         val excludeSet = exclusions.toSet();
         if(count < 0) {
             throw IllegalArgumentException("Asked for negative replica count: $count")
@@ -14,9 +14,16 @@ data class Cluster(val racks:Map<String, List<Int>>) {
         if(count == 0) {
             return result
         }
-        val optionsRaw = racks[rack] ?: throw IllegalArgumentException("Required $count replicas in rack $rack but none found!")
+
         val options = mutableListOf<Int>()
-        options.addAll(optionsRaw)
+        val optionsOverride = racks[rack]
+        if(optionsOverride == null) {
+            val optionsRaw =
+                racks[rack] ?: throw IllegalArgumentException("Required $count replicas in rack $rack but none found!")
+            options.addAll(optionsRaw)
+        } else {
+            options.addAll(optionsOverride)
+        }
         options.removeAll(excludeSet)
 
         result.addAll(options)

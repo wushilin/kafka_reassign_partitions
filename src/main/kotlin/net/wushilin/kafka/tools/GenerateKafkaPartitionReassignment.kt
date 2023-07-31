@@ -2,9 +2,7 @@ package net.wushilin.kafka.tools
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.ajalt.clikt.core.CliktCommand
-import com.github.ajalt.clikt.parameters.options.flag
-import com.github.ajalt.clikt.parameters.options.option
-import com.github.ajalt.clikt.parameters.options.required
+import com.github.ajalt.clikt.parameters.options.*
 import net.wushilin.kafka.tools.KafkaUtil.Companion.connectToKafka
 import net.wushilin.kafka.tools.KafkaUtil.Companion.getClusterInfo
 import net.wushilin.kafka.tools.KafkaUtil.Companion.getTopicList
@@ -27,6 +25,13 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
         "--placement-json-file",
         help = "net.wushilin.kafka.tools.Placement constraint json file"
     ).required()
+
+    private val rackMapList: List<String> by option(
+        "-r",
+        "--rack-map",
+        help = "Map rack to broker IDs with override in `-r dc1:1,2,3 -r @NONE:4,5,6 -r dc2:7,8,9` format"
+    ).multiple()
+
     private val topicsFile: String? by option(
         "-t",
         "--topics",
@@ -45,6 +50,28 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
     ).required()
 
     private lateinit var adminClient: AdminClient
+
+    fun getRackMap():Map<String, List<Int>> {
+        val result = mutableMapOf<String, List<Int>>()
+        for(i in rackMapList) {
+            val tokens = i.split(":").map { it.trim()}
+            if(tokens.size != 2) {
+                throw IllegalArgumentException("Invalid rack map `$i`")
+            }
+            val rack = tokens[0];
+            val brokersStr = tokens[1];
+            val tokensInner = brokersStr.split(",")
+            val tokensInt = tokensInner.map {
+                it.trim()
+            }.filter {
+                it.isNotEmpty()
+            }.map {
+                it.toInt()
+            }
+            result[rack] = tokensInt
+        }
+        return result
+    }
     override fun run() {
         logger.info("Arguments:")
         logger.info("    placement-file:            $placementFile")
@@ -65,8 +92,9 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
         logger.info("Kafka connected")
         logger.info("Parsing placement file: $placementFile")
         val placement = Parser.parsePlacement(placementFile)
+        val rackOverride = getRackMap();
         logger.info("net.wushilin.kafka.tools.Placement file parsed: $placement")
-
+        logger.info("Rack override: $rackOverride")
         logger.info("Getting cluster info:")
         val cluster = getClusterInfo(adminClient)
         logger.info("net.wushilin.kafka.tools.Cluster info retrieved:")
@@ -106,7 +134,7 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
                     val targetCount = spec.count
                     val exclusion = mutableListOf<Int>()
                     exclusion.addAll(replicas)
-                    val selected = cluster.selectReplica(targetRack, targetCount, exclusion)
+                    val selected = cluster.selectReplica(rackOverride, targetRack, targetCount, exclusion)
                     replicas.addAll(selected)
                 }
                 for (spec in placement.observerRules) {
@@ -116,7 +144,7 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
                     exclusion.addAll(replicas)
                     exclusion.addAll(observers)
                     val selected =
-                        cluster.selectReplica(targetRack, targetCount, exclusion) // exclude replicas from selection
+                        cluster.selectReplica(rackOverride, targetRack, targetCount, exclusion) // exclude replicas from selection
                     observers.addAll(selected)
                 }
                 replicas.shuffle()
