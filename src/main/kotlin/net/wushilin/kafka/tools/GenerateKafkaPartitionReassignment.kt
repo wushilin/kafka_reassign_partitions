@@ -51,15 +51,18 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
 
     private lateinit var adminClient: AdminClient
 
-    fun getRackMap():Map<String, List<Int>> {
+    private fun getRackMap():Map<String, List<Int>> {
         val result = mutableMapOf<String, List<Int>>()
         for(i in rackMapList) {
             val tokens = i.split(":").map { it.trim()}
             if(tokens.size != 2) {
                 throw IllegalArgumentException("Invalid rack map `$i`")
             }
-            val rack = tokens[0];
-            val brokersStr = tokens[1];
+            var rack = tokens[0]
+            if(rack == "") {
+                rack = "@NONE"
+            }
+            val brokersStr = tokens[1]
             val tokensInner = brokersStr.split(",")
             val tokensInt = tokensInner.map {
                 it.trim()
