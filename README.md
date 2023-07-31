@@ -90,6 +90,23 @@ Options:
 ./generate-reassignment.sh -c client.properties -p placement.json -t topics.txt -o movement.json
 ```
 
+By default, the program read the rack info from clusters. However, if you want to limit 
+placement for certain rack to certain brokers, override with `-r rack:1,2,3`. The option may repeat for multiple racks.
+
+Example: 
+
+If you want to override this:
+```
+For RACK1, only place in broker 1,2,3
+for RACK2, only place in broker 7,8,9
+for @NONE, only place in 14,17,33 (@NONE means no rack)
+```
+
+You can override with:
+```bash
+-r "RACK1:1,2,3" -r "RACK2:7,8,9" -r "@NONE:14,17,33"
+```
+
 This command will generate `movement.json` to reassign your partition. The rules will be as random as possible, but adhere to the `placement.json` rules.
 
 After this, a `movement.json` file based on your `placement.json` will be randomly generated. If you execute it (see later), it may involves 
