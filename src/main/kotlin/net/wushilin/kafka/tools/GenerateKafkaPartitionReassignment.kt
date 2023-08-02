@@ -32,17 +32,21 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
         help = "Map rack to broker IDs with override in `-r dc1:1,2,3 -r @NONE:4,5,6 -r dc2:7,8,9` format"
     ).multiple()
 
-    private val topicsFile: String? by option(
+    private val useServerRack by option("--use-server-rack")
+        .flag("--ignore-server-rack", default = true)
+
+
+    private val topicsFile: String by option(
         "-t",
         "--topics",
         "--topics-file",
-        help = "Topics file in text format, one per line. If omitted, all topics will be applied"
-    )
+        help = "Topics file in text format in topicName:partition `my-topic:12` format"
+    ).required()
     private val clientFile: String by option(
         "-c",
         "--command-config",
         help = "Your kafka connectivity client properties"
-    ).required()
+    ).default("")
     private val outputFile: String by option(
         "-o",
         "--output",
@@ -78,7 +82,7 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
     override fun run() {
         logger.info("Arguments:")
         logger.info("    placement-file:            $placementFile")
-        logger.info("    topics-file (none -> all): $topicsFile")
+        logger.info("    topics-file:               $topicsFile")
         logger.info("    kafka-client-file:         $clientFile")
         logger.info("    json-out-file:             $outputFile")
         if (java.io.File(outputFile).exists()) {
@@ -89,46 +93,40 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
                 logger.warn("Going to overwrite $outputFile!")
             }
         }
-        val props = EnvAwareProperties.fromPath(clientFile)
         logger.info("Connecting to kafka")
-        adminClient = connectToKafka(clientFile)
         logger.info("Kafka connected")
         logger.info("Parsing placement file: $placementFile")
         val placement = Parser.parsePlacement(placementFile)
         val rackOverride = getRackMap();
         logger.info("net.wushilin.kafka.tools.Placement file parsed: $placement")
         logger.info("Rack override: $rackOverride")
+        logger.info("Use Server Rack: $useServerRack")
         logger.info("Getting cluster info:")
-        val cluster = getClusterInfo(adminClient)
-        logger.info("net.wushilin.kafka.tools.Cluster info retrieved:")
-        val topicsSet = getTopicList(adminClient)
-
-        val topics = TreeSet<String>()
+        var cluster:Cluster? = null;
+        if(useServerRack) {
+            adminClient = connectToKafka(clientFile)
+            cluster = getClusterInfo(adminClient)
+            logger.info("net.wushilin.kafka.tools.Cluster info retrieved:")
+        } else {
+            cluster = Cluster(rackOverride)
+        }
+        val topics = TreeMap<String, Int>()
         if (topicsFile != null) {
             java.io.File(topicsFile).forEachLine { topic ->
                 if (topic.trim().isNotEmpty()) {
-                    topics.add(topic.trim())
+                    val tokens = topic.split(":")
+                    if(tokens.size != 2) {
+                        throw IllegalArgumentException("Unknown token `$topic`")
+                    }
+                    val topicName = tokens[0].trim()
+                    val partition = tokens[1].toInt()
+                    topics[topicName] = partition
                 }
             }
-        } else {
-            topics.addAll(topicsSet)
         }
-
-        logger.info("Count of topics: ${topics.size} topics")
-        logger.info("Inspecting topics...")
-        for (topic in topics) {
-            if (!topicsSet.contains(topic)) {
-                throw IllegalArgumentException("Topic $topic is not found on cluster.")
-            }
-        }
-        logger.info("Looking good...")
-        logger.info("Getting topic partitions...")
-        val topicPartitions = getTopicPartitions(adminClient, topics)
-        logger.info("All good!")
         val result = mutableListOf<OutputEntry>()
-        for (topic in topics) {
-            val partitions = topicPartitions[topic]!!
-            for (partitionNumber in partitions) {
+        for ((topic, partition) in topics) {
+            for (partitionNumber in 0 until partition) {
                 logger.info("  Working on Topic $topic partition $partitionNumber")
                 val replicas = mutableListOf<Int>()
                 val observers = mutableListOf<Int>()
@@ -137,7 +135,7 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
                     val targetCount = spec.count
                     val exclusion = mutableListOf<Int>()
                     exclusion.addAll(replicas)
-                    val selected = cluster.selectReplica(rackOverride, targetRack, targetCount, exclusion)
+                    val selected = cluster.selectReplica(targetRack, targetCount, exclusion)
                     replicas.addAll(selected)
                 }
                 for (spec in placement.observerRules) {
@@ -147,7 +145,7 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
                     exclusion.addAll(replicas)
                     exclusion.addAll(observers)
                     val selected =
-                        cluster.selectReplica(rackOverride, targetRack, targetCount, exclusion) // exclude replicas from selection
+                        cluster.selectReplica(targetRack, targetCount, exclusion) // exclude replicas from selection
                     observers.addAll(selected)
                 }
                 replicas.shuffle()
@@ -173,7 +171,14 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
             Parser.objectMapper.writerWithDefaultPrettyPrinter().writeValue(it, output)
         }
         logger.info("Written ${result.size} entries to $outputFile")
-        val bootstrapServers = props.getProperty("bootstrap.servers")
+        var bootstrapServers = "<bootstrap-server>"
+
+        var clientFilePrompt = "<client-file>"
+        if(clientFile.isNotEmpty()) {
+            val props = EnvAwareProperties.fromPath(clientFile)
+            bootstrapServers = props.getProperty("bootstrap.servers")
+            clientFilePrompt = clientFile
+        }
         println("###############################################################################")
         println("Please considering doing the following:")
         println("    1. Inspect `$outputFile` and make sure it is accurate and makes sense!")
@@ -181,9 +186,9 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
         println("        a. If you use open source kafka, you can use `kafka-reassign-partitions.sh`")
         println("        b. If you use Confluent Platform, you can use `kafka-reassign-partitions`")
         println("    3. Run this command:")
-        println("       $ kafka-reassign-partitions --execute --reassignment-json-file \"$outputFile\" --bootstrap-server \"$bootstrapServers\" --command-config \"$clientFile\"")
+        println("       $ kafka-reassign-partitions --execute --throttle 50000000 --reassignment-json-file \"$outputFile\" --bootstrap-server \"$bootstrapServers\" --command-config \"$clientFilePrompt\"")
         println("    4. Run this command until it completes successfully:")
-        println("       $ kafka-reassign-partitions --verify --reassignment-json-file \"$outputFile\" --bootstrap-server \"$bootstrapServers\" --command-config \"$clientFile\"")
+        println("       $ kafka-reassign-partitions --verify --reassignment-json-file \"$outputFile\" --bootstrap-server \"$bootstrapServers\" --command-config \"$clientFilePrompt\"")
         println("    5. Verify your placement manually using kafka-topics describe feature.")
         println("###############################################################################")
     }

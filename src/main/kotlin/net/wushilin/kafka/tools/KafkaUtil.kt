@@ -5,6 +5,7 @@ import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.DescribeTopicsOptions
 import org.apache.kafka.clients.admin.KafkaAdminClient
 import org.apache.kafka.clients.admin.ListTopicsOptions
+import java.util.*
 
 class KafkaUtil {
     companion object {
@@ -13,11 +14,18 @@ class KafkaUtil {
             return KafkaAdminClient.create(prop)
         }
 
-        fun getTopicList(adminClient:AdminClient): Set<String> {
+        fun getTopicList(adminClient:AdminClient): TreeMap<String, Int> {
             val option = ListTopicsOptions()
             option.listInternal(true)
             option.timeoutMs(60000)
-            return adminClient.listTopics(option).names().get()
+            val result = adminClient.listTopics(option).names().get()
+            val largerResult = adminClient.describeTopics(result).allTopicNames().get()
+            val resultMap = TreeMap<String, Int>()
+            for((topicName, meta) in largerResult) {
+                val partitions = meta.partitions().size
+                resultMap[topicName] = partitions
+            }
+            return resultMap
         }
 
 

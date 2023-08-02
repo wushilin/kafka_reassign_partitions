@@ -22,7 +22,7 @@ class GetTopicList : CliktCommand() {
         "-t",
         "--topics",
         "--topics-file",
-        help = "Topics file in text format, one per line"
+        help = "Topics file in text format, one per line. Each line is topic:partition_count format (e.g.`my-topic:12`)"
     ).required()
     private val clientFile: String by option(
         "-c",
@@ -44,17 +44,15 @@ class GetTopicList : CliktCommand() {
         }
         adminClient = connectToKafka(clientFile)
         logger.info("Kafka connected.");
-        val topicsSetNoOrder = getTopicList(adminClient)
-        val topicsSetOrdered = TreeSet<String>()
-        topicsSetOrdered.addAll(topicsSetNoOrder)
-        logger.info("Found ${topicsSetOrdered.size} topics")
+        val topicsMapOrdered = getTopicList(adminClient)
+        logger.info("Found ${topicsMapOrdered.size} topics")
         java.io.File(topicsFile).outputStream().use {
-            for (i in topicsSetOrdered) {
-                logger.info("Written topic: $i")
-                it.write("$i\n".toByteArray(StandardCharsets.UTF_8))
+            for ((topic, partitions) in topicsMapOrdered) {
+                logger.info("Written topic: $topic:$partitions")
+                it.write("$topic:$partitions\n".toByteArray(StandardCharsets.UTF_8))
             }
         }
-        logger.info("Written ${topicsSetOrdered.size} entries to $topicsFile")
+        logger.info("Written ${topicsMapOrdered.size} entries to $topicsFile")
     }
 }
 

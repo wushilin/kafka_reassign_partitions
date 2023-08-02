@@ -26,3 +26,7 @@ build/
 .idea/
 tmp/
 *.swp
+*.local
+.local
+.local.*
+*.local.*
