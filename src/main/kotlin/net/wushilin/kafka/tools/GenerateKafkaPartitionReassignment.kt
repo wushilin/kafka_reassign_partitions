@@ -42,6 +42,13 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
         "--topics-file",
         help = "Topics file in text format in topicName:partition `my-topic:12` format"
     ).required()
+
+    private val limitS:String by option (
+        "-l",
+        "--limit-per-file",
+        help="Limit number of entries per file"
+    ).default("9999999")
+
     private val clientFile: String by option(
         "-c",
         "--command-config",
@@ -165,12 +172,20 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
                 result.add(newItem)
             }
         }
-        val output = Output(result, 1)
-        logger.info("About to write to file $outputFile")
-        java.io.File(outputFile).outputStream().use {
-            Parser.objectMapper.writerWithDefaultPrettyPrinter().writeValue(it, output)
+        val outputs = Common.splitList(result, limitS.toInt())
+        for((idx, output) in outputs.withIndex()) {
+            val output = Output(result, 1)
+            var outfile = if(outputs.size == 1) {
+                outputFile
+            } else {
+                "$outputFile.${idx + 1}"
+            }
+            logger.info("About to write to file $outfile")
+            java.io.File(outfile).outputStream().use {
+                Parser.objectMapper.writerWithDefaultPrettyPrinter().writeValue(it, output)
+            }
+            logger.info("Written ${result.size} entries to $outfile")
         }
-        logger.info("Written ${result.size} entries to $outputFile")
         var bootstrapServers = "<bootstrap-server>"
 
         var clientFilePrompt = "<client-file>"

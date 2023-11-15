@@ -195,4 +195,33 @@ kafka-reassign-partitions --verify --reassignment-json-file "movement.json" \
 
 Upon completion, the internal throttles will be removed automatically
 
+# Simpler version when you just want to adjust RF
+
+Use this if you do need to increase/decrease RF but you don't want to:
+1. Reshuffle the leaders
+2. Retain current placement as much as you can
+3. Optimize the broker with free space selection
+
+## Usage:
+```bash
+java -cp build/libs/kafka_reassign_partitions-1.0-RELEASE.jar \
+    net.wushilin.kafka.tools.SimpleAdjustRFKt \
+    --min-free-gb 4.7 --limit-per-file 300 \
+    -d describe.txt -f freespace.txt -s storage.json \
+    -t topics.txt  --replica-count 3 -o out.json
+```
+
+Explanation:
+This program runs simple RF adjustment generation and:
+* limit output adjustment to 300 adjustment per file
+* Use existing topic `describe.txt`, which is output of your `kafka-topics --describe`. This to retain current replicas
+* Consult `freespace.txt` for current broker free space
+* Require after adjustment each broker should have 4.7GB free
+* Generate only for topics in `topics.txt`
+* Target replica count is 3. 
+  * If more than 3, it would remove replica on the most occupied broker
+  * If less than 3, it would add replica on the least occupied broker
+* Write output to `out.json` (multiple files might be written)
+
+The way to use the `out.json` is same as the first method.
 ## Enjoy!

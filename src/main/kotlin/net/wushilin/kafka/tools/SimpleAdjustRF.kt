@@ -40,6 +40,10 @@ class SimpleAdjustRF : CliktCommand() {
         help = "Replica count target"
     ).required()
 
+    private val minFreeS:String by option(
+        "--min-free-gb",
+        help = "Minimum free space required"
+    ).default("30")
     private val outputFile:String by option(
         "-o",
         "--output-file",
@@ -59,6 +63,7 @@ class SimpleAdjustRF : CliktCommand() {
         val existingPlacement = DescribeResult.parse(describeFile)
         val topics = readAsList(topicsFile)
         val targetReplicas = replicaCountS.toInt()
+        val minFree = (minFreeS.toDouble() * 1073741824).toLong()
         val adjustments = mutableMapOf<Pair<String, Int>, List<Int>>()
         for(topic in topics) {
             val partitionCount = findPartitionCountFor(existingPlacement, topic)
@@ -78,7 +83,7 @@ class SimpleAdjustRF : CliktCommand() {
                     println("Removing $toRemove from $topic:$partition (size $partitionSize) $replicas")
                 }
                 while(replicas.size < targetReplicas) {
-                    val toAdd = freeSpace.increaseReplica(topic, partition, replicas, partitionSize)
+                    val toAdd = freeSpace.increaseReplica(topic, partition, replicas, partitionSize, minFree)
                     replicas.add(toAdd)
                     println("Adding $toAdd to $topic:$partition (size $partitionSize) $replicas")
                 }
@@ -97,7 +102,7 @@ class SimpleAdjustRF : CliktCommand() {
             }
             println("Change: Broker $brokerId free space $expression bytes")
         }
-        val adjustmentSplit = splitMap(adjustments, limitS.toInt())
+        val adjustmentSplit = Common.splitMap(adjustments, limitS.toInt())
         for((idx, next) in adjustmentSplit.withIndex()) {
             val result = mutableListOf<OutputEntry>()
             for((key, replicas) in next) {
@@ -174,19 +179,4 @@ class SimpleAdjustRF : CliktCommand() {
 }
 
 
-fun <K, V> splitMap(input:Map<K, V>, count:Int):List<Map<K, V>> {
-    val result = mutableListOf<Map<K, V>>()
-    var next = mutableMapOf<K, V>()
-    for((k, v) in input) {
-        next[k] = v
-        if(next.size >= count) {
-            result.add(next)
-            next = mutableMapOf()
-        }
-    }
-    if(next.isNotEmpty()) {
-        result.add(next)
-    }
-    return result
-}
 fun main(args: Array<String>) = SimpleAdjustRF().main(args)

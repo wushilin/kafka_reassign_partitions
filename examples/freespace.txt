@@ -1,0 +1,4 @@
+# Broker ID, free_space_in_GiB
+1,200
+2,400
+3,600

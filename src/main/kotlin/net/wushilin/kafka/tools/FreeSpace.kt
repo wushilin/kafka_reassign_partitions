@@ -45,7 +45,7 @@ data class FreeSpace(val data:MutableMap<Int, Long>) {
         data[minFreeBroker] = newFree
         return minFreeBroker
     }
-    fun increaseReplica(topic:String, partition:Int, existingIsr:List<Int>, size:Long):Int {
+    fun increaseReplica(topic:String, partition:Int, existingIsr:List<Int>, size:Long, minFree:Long):Int {
         var maxFree = -1L
         var maxFreeBroker = -1
         for((broker, free) in data) {
@@ -60,7 +60,7 @@ data class FreeSpace(val data:MutableMap<Int, Long>) {
         }
 
         var newFree = maxFree - size
-        if(newFree <= 300*1073741824) {
+        if(newFree < minFree) {
             println("Not possible!")
             throw IllegalArgumentException("No broker is free to take $topic:$partition (size $size bytes)")
         }
