@@ -217,6 +217,9 @@ This program runs simple RF adjustment generation and:
 * Use existing topic `describe.txt`, which is output of your `kafka-topics --describe`. This to retain current replicas
 * Consult `freespace.txt` for current broker free space
 * Require after adjustment each broker should have 4.7GB free
+* Consult `storage.json` for partition's storage utilization. The `storage.json` is the output of `kafka-log-dirs` command, after removing the non-json part (first 2 lines typically)
+* Ensure after each partition adjustment, the broker still has at least 4.7GiB worth free space. If this can't be fufilled, the program will throw exception and stop.
+* Write output to `out.json`. Note that if the entries is more than `300` (the limit), the actual file might be `out.json.1`, `out.json.2` and so on.
 * Generate only for topics in `topics.txt`
 * Target replica count is 3. 
   * If more than 3, it would remove replica on the most occupied broker
