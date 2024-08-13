@@ -173,8 +173,8 @@ class GenerateKafkaPartitionReassignment : CliktCommand() {
             }
         }
         val outputs = Common.splitList(result, limitS.toInt())
-        for((idx, output) in outputs.withIndex()) {
-            val output = Output(result, 1)
+        for((idx, outputSmall) in outputs.withIndex()) {
+            val output = Output(outputSmall, 1)
             var outfile = if(outputs.size == 1) {
                 outputFile
             } else {
